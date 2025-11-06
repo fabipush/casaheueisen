@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Casa Heueisen – Baudokumentation</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="login" id="login-section">
+        <h1>Casa Heueisen</h1>
+        <p class="subtitle">Virtuelle Baudokumentation</p>
+        <form id="login-form" class="login__form">
+          <label for="password">Passwort</label>
+          <input type="password" id="password" required />
+          <button type="submit">Anmelden</button>
+        </form>
+        <p class="login__hint">
+          Admin: <code>bauen2024</code> · Viewer: <code>anschauen</code>
+        </p>
+      </section>
+
+      <section class="dashboard hidden" id="dashboard">
+        <header class="dashboard__header">
+          <div>
+            <h1>Casa Heueisen</h1>
+            <p class="subtitle">Virtuelle Baudokumentation</p>
+          </div>
+          <div class="user">
+            <span id="user-role"></span>
+            <button id="logout">Abmelden</button>
+          </div>
+        </header>
+
+        <section class="overview">
+          <div class="overview__intro">
+            <h2>Hausübersicht</h2>
+            <p>
+              Wählen Sie einen Bereich im Haus, um gezielt Aufgaben für diesen Raum zu
+              sehen.
+            </p>
+            <div class="overview__legend">
+              <span><span class="legend legend--open"></span> Offen</span>
+              <span><span class="legend legend--total"></span> Gesamt</span>
+              <span class="overview__hint">Anzeige als <strong>offen/gesamt</strong></span>
+            </div>
+          </div>
+          <div class="house-map" id="house-map">
+            <img
+              src="assets/hausplan.svg"
+              alt="Schnitt eines Einfamilienhauses mit markierten Räumen"
+            />
+            <button class="house-map__zone" type="button" data-room-zone="Bad" style="--x: 54%; --y: 9%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Bad</span>
+              <span class="house-map__count">0</span>
+            </button>
+            <button class="house-map__zone" type="button" data-room-zone="Schlafzimmer" style="--x: 17%; --y: 9%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Schlafzimmer</span>
+              <span class="house-map__count">0</span>
+            </button>
+            <button class="house-map__zone" type="button" data-room-zone="Kinderzimmer" style="--x: 54%; --y: 34%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Kinderzimmer</span>
+              <span class="house-map__count">0</span>
+            </button>
+            <button class="house-map__zone" type="button" data-room-zone="Wohnzimmer" style="--x: 17%; --y: 34%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Wohnzimmer</span>
+              <span class="house-map__count">0</span>
+            </button>
+            <button class="house-map__zone" type="button" data-room-zone="Küche" style="--x: 54%; --y: 59%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Küche</span>
+              <span class="house-map__count">0</span>
+            </button>
+            <button class="house-map__zone" type="button" data-room-zone="Eingang & Treppen" style="--x: 17%; --y: 59%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Eingang &amp; Treppen</span>
+              <span class="house-map__count">0</span>
+            </button>
+            <button class="house-map__zone" type="button" data-room-zone="Hauswirtschaftsraum" data-room-label="Hauswirtschaft" style="--x: 17%; --y: 78%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Hauswirtschaft</span>
+              <span class="house-map__count">0</span>
+            </button>
+            <button class="house-map__zone" type="button" data-room-zone="Technik" style="--x: 54%; --y: 78%; --w: 32%; --h: 18%">
+              <span class="house-map__label">Technik</span>
+              <span class="house-map__count">0</span>
+            </button>
+          </div>
+          <p class="house-map__notice">
+            In der mobilen Ansicht ist die Hausgrafik ausgeblendet. Nutzen Sie die
+            Raumfilter der To-Do-Liste, um Aufgaben je Raum zu sehen.
+          </p>
+        </section>
+
+        <section class="progress">
+          <h2>Baufortschritt</h2>
+          <div class="progress__status">
+            <div>
+              <span id="completed-count">0</span>/<span id="total-count">0</span>
+              Aufgaben erledigt
+            </div>
+            <div class="progress__bar">
+              <div id="progress-bar-fill"></div>
+            </div>
+            <div class="progress__percent">
+              <span id="progress-percent">0%</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="todos">
+          <div class="todos__header">
+            <h2>To-Do-Liste</h2>
+            <div class="todos__filters">
+              <label for="scope-select">Bereich:</label>
+              <select id="scope-select">
+                <option value="all">Alle Aufgaben</option>
+                <option value="general">Allgemein</option>
+                <option value="room">Raumbezug</option>
+              </select>
+              <label for="room-select" id="room-label" class="hidden">Raum:</label>
+              <select id="room-select" class="hidden">
+                <option value="all">Alle Räume</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="viewer-info hidden" id="viewer-info">
+            Sie sind als Viewer angemeldet und können Aufgaben nur ansehen.
+          </p>
+
+          <p class="todo-status hidden" id="todo-status" role="status" aria-live="polite"></p>
+
+          <form id="todo-form" class="todo-form hidden">
+            <div class="field-group">
+              <label for="todo-title">Titel</label>
+              <input type="text" id="todo-title" placeholder="z.B. Elektroinstallation prüfen" required />
+            </div>
+            <div class="field-group">
+              <label for="todo-scope">Kategorie</label>
+              <select id="todo-scope">
+                <option value="general">Allgemein</option>
+                <option value="room">Raumbezug</option>
+              </select>
+            </div>
+            <div class="field-group hidden" id="todo-room-group">
+              <label for="todo-room">Raum</label>
+              <input type="text" id="todo-room" placeholder="z.B. Küche" />
+            </div>
+            <div class="field-group">
+              <label for="todo-notes">Notizen</label>
+              <textarea id="todo-notes" placeholder="Details, Ansprechpartner oder Termine"></textarea>
+            </div>
+            <button type="submit">Aufgabe hinzufügen</button>
+          </form>
+
+          <ul id="todo-list" class="todo-list"></ul>
+        </section>
+      </section>
+    </main>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
