@@ -17,6 +17,27 @@
 2. `.env` aus `.env.example` übernehmen und mit deinen Verbindungsdaten füllen.
 3. `DB_HOST` gesetzt → der Server nutzt die MySQL-Datenbank, legt die Tabelle `todos` an und verwendet sie fortan.
 
+### Schritt-für-Schritt: Verbindung zur Datenbank `baduyrxbnk`
+
+Der neue Webserver stellt PHP **und** Node.js bereit. So aktivierst du die MySQL-Datenbank `baduyrxbnk` für die App:
+
+1. **Projekt hochladen** – Kopiere das gesamte Repository (inkl. `server.js`, `api/`, `index.html`, `styles.css`, `app.js`).
+2. **In das Projektverzeichnis wechseln** – per SSH `cd /pfad/zum/projekt`.
+3. **Abhängigkeit installieren** – `npm install --production mysql2` ausführen.
+4. **`.env` anlegen** – `cp .env.example .env` und die bereits eingetragenen Werte überprüfen:
+   ```ini
+   DB_HOST=localhost
+   DB_USER=baduyrxbnk
+   DB_PASSWORD=3SME7kReSa
+   DB_NAME=baduyrxbnk
+   ```
+   Passe `DB_HOST` an, falls dein Hoster einen anderen Datenbank-Host nennt (z. B. `rdbms.strato.de`).
+5. **Node-Server starten** – `node server.js` (oder über das Hosting-Panel). Der Prozess liefert sowohl `/api/...` als auch die statischen Dateien.
+6. **Frontend anbinden** – liegt das Frontend auf demselben Host, ist keine weitere Konfiguration nötig. Andernfalls `app.config.example.js` nach `app.config.js` kopieren und dort `apiBaseUrl` setzen.
+7. **Verbindung testen** – `curl https://<deine-domain>/api/health` muss `{"status":"ok"}` zurückgeben und das Dashboard sollte Aufgaben laden und speichern können.
+
+> Möchtest du stattdessen die PHP-API verwenden, lege `api/config.php` aus der Vorlage `api/config.sample.php` an und trage dieselben Zugangsdaten (`baduyrxbnk` / `3SME7kReSa`) ein.
+
 ## Betrieb auf gemeinsamem Webspace
 
 - Für Setups **mit Node.js-Unterstützung** findest du weiterhin die Schritt-für-Schritt-Anleitung in [`docs/DEPLOYMENT_SHARED_HOSTING.md`](docs/DEPLOYMENT_SHARED_HOSTING.md).
