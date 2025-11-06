@@ -23,6 +23,8 @@ if (!process.env.DB_HOST) {
   console.warn("DB_HOST is not set. Using localhost as fallback.");
 }
 
+const useSsl = /^true$/i.test(process.env.DB_SSL || "");
+
 const pool = mysql.createPool({
   host: dbHost,
   user: process.env.DB_USER || "dbu2588999",
@@ -31,8 +33,12 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  ssl: process.env.DB_SSL === "false" ? undefined : { rejectUnauthorized: false },
+  ssl: useSsl ? { rejectUnauthorized: false } : undefined,
 });
+
+if (!useSsl) {
+  console.info("MySQL SSL connection disabled. Set DB_SSL=true to enable it.");
+}
 
 async function ensureSchema() {
   await pool.query(`
@@ -98,7 +104,10 @@ app.get("/api/todos", async (req, res) => {
     );
   } catch (error) {
     console.error("Failed to fetch todos", error);
-    res.status(500).json({ message: "Konnte Aufgaben nicht laden." });
+    res.status(500).json({
+      message: "Konnte Aufgaben nicht laden.",
+      code: error.code,
+    });
   }
 });
 
@@ -116,7 +125,10 @@ app.post("/api/todos", async (req, res) => {
     res.status(201).json({ message: "Aufgabe gespeichert." });
   } catch (error) {
     console.error("Failed to create todo", error);
-    res.status(500).json({ message: "Konnte Aufgabe nicht speichern." });
+    res.status(500).json({
+      message: "Konnte Aufgabe nicht speichern.",
+      code: error.code,
+    });
   }
 });
 
@@ -164,7 +176,10 @@ app.patch("/api/todos/:id", async (req, res) => {
     res.json({ message: "Aufgabe aktualisiert." });
   } catch (error) {
     console.error("Failed to update todo", error);
-    res.status(500).json({ message: "Konnte Aufgabe nicht aktualisieren." });
+    res.status(500).json({
+      message: "Konnte Aufgabe nicht aktualisieren.",
+      code: error.code,
+    });
   }
 });
 
@@ -178,7 +193,10 @@ app.delete("/api/todos/:id", async (req, res) => {
     res.json({ message: "Aufgabe gelöscht." });
   } catch (error) {
     console.error("Failed to delete todo", error);
-    res.status(500).json({ message: "Konnte Aufgabe nicht löschen." });
+    res.status(500).json({
+      message: "Konnte Aufgabe nicht löschen.",
+      code: error.code,
+    });
   }
 });
 

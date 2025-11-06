@@ -69,6 +69,15 @@ function setTodoStatus(message = "", type = "info") {
   todoStatus.classList.toggle("hidden", !message);
 }
 
+async function parseErrorResponse(response) {
+  try {
+    const data = await response.json();
+    return data?.code ? `${response.status} (${data.code})` : `${response.status}`;
+  } catch (error) {
+    return `${response.status}`;
+  }
+}
+
 async function fetchTodosFromServer() {
   isLoadingTodos = true;
   todoError = "";
@@ -81,7 +90,8 @@ async function fetchTodosFromServer() {
       cache: "no-store",
     });
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+      const label = await parseErrorResponse(response);
+      throw new Error(`Server returned ${label}`);
     }
     const data = await response.json();
     if (!Array.isArray(data)) {
@@ -93,8 +103,9 @@ async function fetchTodosFromServer() {
     }
   } catch (error) {
     console.error("Konnte Aufgaben nicht laden", error);
-    todoError =
+    const message =
       "Die Aufgaben konnten nicht vom Server geladen werden. Bitte versuchen Sie es später erneut.";
+    todoError = `${message} (${error.message})`;
     setTodoStatus(todoError, "error");
   } finally {
     isLoadingTodos = false;
@@ -336,12 +347,13 @@ async function toggleTodo(id) {
       body: JSON.stringify({ completed: newCompletedState }),
     });
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+      const label = await parseErrorResponse(response);
+      throw new Error(`Server returned ${label}`);
     }
   } catch (error) {
     console.error("Konnte Aufgabe nicht aktualisieren", error);
     setTodoStatus(
-      "Die Aufgabe konnte nicht aktualisiert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      `Die Aufgabe konnte nicht aktualisiert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${error.message})`,
       "error"
     );
     return;
@@ -359,12 +371,13 @@ async function deleteTodo(id) {
       method: "DELETE",
     });
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+      const label = await parseErrorResponse(response);
+      throw new Error(`Server returned ${label}`);
     }
   } catch (error) {
     console.error("Konnte Aufgabe nicht löschen", error);
     setTodoStatus(
-      "Die Aufgabe konnte nicht gelöscht werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      `Die Aufgabe konnte nicht gelöscht werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${error.message})`,
       "error"
     );
     return;
@@ -391,13 +404,14 @@ async function addTodo({ title, scope, room, notes }) {
       body: JSON.stringify(todo),
     });
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+      const label = await parseErrorResponse(response);
+      throw new Error(`Server returned ${label}`);
     }
     setTodoStatus("Aufgabe wurde gespeichert.", "success");
   } catch (error) {
     console.error("Konnte Aufgabe nicht speichern", error);
     setTodoStatus(
-      "Die Aufgabe konnte nicht gespeichert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      `Die Aufgabe konnte nicht gespeichert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${error.message})`,
       "error"
     );
     return;
