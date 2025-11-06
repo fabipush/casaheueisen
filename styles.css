@@ -408,6 +408,23 @@ main.app {
   background: rgba(249, 250, 251, 0.8);
 }
 
+.todo--status {
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.todo--status strong {
+  color: var(--text);
+  font-size: 1.05rem;
+  font-style: normal;
+}
+
+.todo--status p {
+  margin: 0;
+  line-height: 1.4;
+}
+
 .todo__header {
   display: flex;
   justify-content: space-between;

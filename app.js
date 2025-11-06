@@ -254,19 +254,32 @@ function createTodoItemElement(item) {
 }
 
 function renderTodos() {
+  const filterScope = scopeSelect.value;
+  const selectedRoom = roomSelect.value;
+  todoList.innerHTML = "";
+
   if (isLoadingTodos && !todos.length) {
-    todoList.innerHTML = "";
+    const loading = document.createElement("li");
+    loading.className = "todo todo--status";
+    const strong = document.createElement("strong");
+    strong.textContent = "Aufgaben werden geladen…";
+    loading.appendChild(strong);
+    todoList.appendChild(loading);
     return;
   }
 
   if (todoError && !todos.length) {
-    todoList.innerHTML = "";
+    const errorItem = document.createElement("li");
+    errorItem.className = "todo todo--status";
+    const strong = document.createElement("strong");
+    strong.textContent = "Keine Aufgaben verfügbar.";
+    const message = document.createElement("p");
+    message.textContent = todoError;
+    errorItem.appendChild(strong);
+    errorItem.appendChild(message);
+    todoList.appendChild(errorItem);
     return;
   }
-
-  const filterScope = scopeSelect.value;
-  const selectedRoom = roomSelect.value;
-  todoList.innerHTML = "";
 
   const filtered = todos.filter((item) => {
     if (filterScope === "general") {
