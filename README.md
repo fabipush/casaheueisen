@@ -17,6 +17,21 @@
 2. `.env` aus `.env.example` übernehmen und mit deinen Verbindungsdaten füllen.
 3. `DB_HOST` gesetzt → der Server nutzt die MySQL-Datenbank, legt die Tabelle `todos` an und verwendet sie fortan.
 
+## Betrieb auf gemeinsamem Webspace
+
+Eine ausführliche Schritt-für-Schritt-Anleitung findest du in [`docs/DEPLOYMENT_SHARED_HOSTING.md`](docs/DEPLOYMENT_SHARED_HOSTING.md).
+
+Kurzfassung:
+
+1. Frontend-Dateien allein genügen nicht – der Node.js-Server muss laufen, weil er als Schnittstelle zur MySQL-Datenbank dient.
+2. Über das Hosting-Panel oder via SSH Node.js aktivieren und im Projektordner `npm install --production mysql2` ausführen.
+3. `.env` bzw. Umgebungsvariablen mit `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, optional `DB_SSL`, und dem gewünschten `PORT` setzen.
+4. `node server.js` (oder `npm start`) starten. Die API steht dann unter `/api/...` bereit und liefert auch die statischen Dateien aus.
+5. Bei getrenntem Frontend `app.config.example.js` kopieren → `app.config.js` und dort `window.APP_CONFIG = { apiBaseUrl: "https://dein-backend.example.com/api" };` setzen (_vor_ `app.js` einbinden).
+6. Mit `https://<deine-domain>/api/health` prüfen, ob die API erreichbar ist.
+
+> Hinweis: Hoster ohne Node-Unterstützung können die API nicht ausführen. In diesem Fall muss ein anderer Server (VPS, Docker, PaaS) die Node-Anwendung übernehmen.
+
 ## Login-Daten
 
 - **Admin:** `bauen2024`
