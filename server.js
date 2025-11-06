@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import mysql from "mysql2/promise";
 import { randomUUID } from "crypto";
@@ -25,20 +26,59 @@ if (!process.env.DB_HOST) {
 
 const useSsl = /^true$/i.test(process.env.DB_SSL || "");
 
+const dbPort = Number.parseInt(process.env.DB_PORT || "3306", 10);
+if (Number.isNaN(dbPort)) {
+  throw new Error(`Ungültiger DB_PORT-Wert: ${process.env.DB_PORT}`);
+}
+
+const connectionLimit = Number.parseInt(
+  process.env.DB_CONNECTION_LIMIT || "10",
+  10
+);
+if (Number.isNaN(connectionLimit)) {
+  throw new Error(
+    `Ungültiger DB_CONNECTION_LIMIT-Wert: ${process.env.DB_CONNECTION_LIMIT}`
+  );
+}
+
+let sslOptions;
+if (useSsl) {
+  sslOptions = { rejectUnauthorized: false };
+  if (process.env.DB_SSL_CA) {
+    try {
+      sslOptions.ca = fs.readFileSync(process.env.DB_SSL_CA, "utf8");
+      console.info("Custom CA für MySQL SSL geladen.");
+    } catch (error) {
+      console.warn(
+        `Konnte Datei aus DB_SSL_CA nicht laden (${process.env.DB_SSL_CA}): ${error.message}`
+      );
+    }
+  }
+}
+
 const pool = mysql.createPool({
   host: dbHost,
+  port: dbPort,
   user: process.env.DB_USER || "dbu2588999",
   password: process.env.DB_PASSWORD || "casaheueisen2025",
   database: process.env.DB_NAME || "dbs14937341",
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit,
   queueLimit: 0,
-  ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+  ssl: sslOptions,
 });
 
 if (!useSsl) {
   console.info("MySQL SSL connection disabled. Set DB_SSL=true to enable it.");
+} else {
+  console.info("MySQL SSL connection aktiviert.");
 }
+
+console.info(
+  `Verbinde mit MySQL-Server ${dbHost}:${dbPort} (Datenbank: ${
+    process.env.DB_NAME || "dbs14937341"
+  }) mit connectionLimit=${connectionLimit}.`
+);
 
 async function ensureSchema() {
   await pool.query(`
@@ -195,6 +235,20 @@ app.delete("/api/todos/:id", async (req, res) => {
     console.error("Failed to delete todo", error);
     res.status(500).json({
       message: "Konnte Aufgabe nicht löschen.",
+      code: error.code,
+    });
+  }
+});
+
+app.get("/api/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1 AS ok");
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error("Database health check failed", error);
+    res.status(500).json({
+      status: "error",
+      message: "Keine Verbindung zur Datenbank möglich.",
       code: error.code,
     });
   }

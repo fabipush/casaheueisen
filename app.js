@@ -3,7 +3,16 @@ const USERS = {
   anschauen: { role: "Viewer", permissions: "read" },
 };
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = (() => {
+  const configured = window.APP_CONFIG?.apiBaseUrl;
+  if (typeof configured === "string" && configured.trim()) {
+    return configured.trim().replace(/\/$/, "");
+  }
+  if (window.location.protocol === "file:") {
+    return "http://localhost:3000/api";
+  }
+  return "/api";
+})();
 const HOUSE_ROOMS = [
   "Bad",
   "Schlafzimmer",
