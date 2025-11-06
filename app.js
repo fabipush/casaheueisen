@@ -3,16 +3,9 @@ const USERS = {
   anschauen: { role: "Viewer", permissions: "read" },
 };
 
-const API_BASE_URL = (() => {
-  const configured = window.APP_CONFIG?.apiBaseUrl;
-  if (typeof configured === "string" && configured.trim()) {
-    return configured.trim().replace(/\/$/, "");
-  }
-  if (window.location.protocol === "file:") {
-    return "http://localhost:3000/api";
-  }
-  return "/api";
-})();
+const API_BASE_CANDIDATES = createApiBaseCandidates();
+let apiBaseUrl = API_BASE_CANDIDATES[0];
+let apiBasePromise = null;
 const HOUSE_ROOMS = [
   "Bad",
   "Schlafzimmer",
@@ -78,10 +71,33 @@ function setTodoStatus(message = "", type = "info") {
   todoStatus.classList.toggle("hidden", !message);
 }
 
+function describeFetchError(error) {
+  if (!error) {
+    return "Unbekannter Fehler";
+  }
+  const message = typeof error.message === "string" ? error.message : "";
+  if (!message) {
+    return "Unbekannter Fehler";
+  }
+  if (message === "Failed to fetch" || message === "TypeError: Failed to fetch") {
+    return "Failed to fetch – prüfen Sie die API-URL, HTTPS-Konfiguration oder CORS-Einstellungen.";
+  }
+  return message;
+}
+
 async function parseErrorResponse(response) {
   try {
     const data = await response.json();
-    return data?.code ? `${response.status} (${data.code})` : `${response.status}`;
+    if (data?.code) {
+      return `${response.status} (${data.code})`;
+    }
+    if (data?.message) {
+      return `${response.status} (${data.message})`;
+    }
+    if (data?.error) {
+      return `${response.status} (${data.error})`;
+    }
+    return `${response.status}`;
   } catch (error) {
     return `${response.status}`;
   }
@@ -92,7 +108,8 @@ async function fetchTodosFromServer() {
   todoError = "";
   setTodoStatus("Aufgaben werden geladen…", "loading");
   try {
-    const response = await fetch(`${API_BASE_URL}/todos`, {
+    const baseUrl = await ensureApiBase();
+    const response = await fetch(`${baseUrl}/todos`, {
       headers: {
         Accept: "application/json",
       },
@@ -114,7 +131,8 @@ async function fetchTodosFromServer() {
     console.error("Konnte Aufgaben nicht laden", error);
     const message =
       "Die Aufgaben konnten nicht vom Server geladen werden. Bitte versuchen Sie es später erneut.";
-    todoError = `${message} (${error.message})`;
+    const reason = describeFetchError(error);
+    todoError = `${message} (${reason})`;
     setTodoStatus(todoError, "error");
   } finally {
     isLoadingTodos = false;
@@ -361,7 +379,8 @@ async function toggleTodo(id) {
 
   const newCompletedState = !todo.completed;
   try {
-    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+    const baseUrl = await ensureApiBase();
+    const response = await fetch(`${baseUrl}/todos/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -375,7 +394,7 @@ async function toggleTodo(id) {
   } catch (error) {
     console.error("Konnte Aufgabe nicht aktualisieren", error);
     setTodoStatus(
-      `Die Aufgabe konnte nicht aktualisiert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${error.message})`,
+      `Die Aufgabe konnte nicht aktualisiert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${describeFetchError(error)})`,
       "error"
     );
     return;
@@ -389,7 +408,8 @@ async function deleteTodo(id) {
     return;
   }
   try {
-    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+    const baseUrl = await ensureApiBase();
+    const response = await fetch(`${baseUrl}/todos/${id}`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -399,7 +419,7 @@ async function deleteTodo(id) {
   } catch (error) {
     console.error("Konnte Aufgabe nicht löschen", error);
     setTodoStatus(
-      `Die Aufgabe konnte nicht gelöscht werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${error.message})`,
+      `Die Aufgabe konnte nicht gelöscht werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${describeFetchError(error)})`,
       "error"
     );
     return;
@@ -418,7 +438,8 @@ async function addTodo({ title, scope, room, notes }) {
     completed: false,
   };
   try {
-    const response = await fetch(`${API_BASE_URL}/todos`, {
+    const baseUrl = await ensureApiBase();
+    const response = await fetch(`${baseUrl}/todos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -433,7 +454,7 @@ async function addTodo({ title, scope, room, notes }) {
   } catch (error) {
     console.error("Konnte Aufgabe nicht speichern", error);
     setTodoStatus(
-      `Die Aufgabe konnte nicht gespeichert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${error.message})`,
+      `Die Aufgabe konnte nicht gespeichert werden. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut. (${describeFetchError(error)})`,
       "error"
     );
     return;
@@ -581,6 +602,87 @@ todoForm.addEventListener("submit", async (event) => {
 
   await addTodo(data);
 });
+
+function createApiBaseCandidates() {
+  const candidates = [];
+  const seen = new Set();
+
+  const addCandidate = (value) => {
+    if (!value) {
+      return;
+    }
+    const normalized = value.replace(/\/+$/, "");
+    if (!normalized) {
+      return;
+    }
+    if (!seen.has(normalized)) {
+      candidates.push(normalized);
+      seen.add(normalized);
+    }
+  };
+
+  const addWithPhpFallback = (value) => {
+    addCandidate(value);
+    if (value && !/\.php$/i.test(value)) {
+      addCandidate(`${value.replace(/\/+$/, "")}/index.php`);
+    }
+  };
+
+  const configured = window.APP_CONFIG?.apiBaseUrl;
+  if (typeof configured === "string" && configured.trim()) {
+    addWithPhpFallback(configured.trim());
+  }
+
+  const defaultBase = window.location.protocol === "file:" ? "http://localhost:3000/api" : "/api";
+  addWithPhpFallback(defaultBase);
+
+  return candidates.length ? candidates : ["/api"];
+}
+
+async function ensureApiBase() {
+  if (!apiBasePromise) {
+    apiBasePromise = detectApiBase()
+      .then((base) => {
+        apiBaseUrl = base;
+        console.info(`Verwende API-Basis: ${base}`);
+        return base;
+      })
+      .catch((error) => {
+        apiBasePromise = null;
+        throw error;
+      });
+  }
+  return apiBasePromise;
+}
+
+async function detectApiBase() {
+  const errors = [];
+  for (const candidate of API_BASE_CANDIDATES) {
+    const base = candidate.replace(/\/+$/, "");
+    const endpoints = ["health", "todos"];
+    for (const endpoint of endpoints) {
+      const url = `${base}/${endpoint}`;
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (response.ok) {
+          return base;
+        }
+        errors.push(`${url} → HTTP ${response.status}`);
+      } catch (error) {
+        errors.push(`${url} → ${error?.message || "Netzwerkfehler"}`);
+      }
+    }
+  }
+
+  const diagnostic = errors.length ? errors.join("; ") : "Keine Kandidaten getestet.";
+  throw new Error(
+    `Keine API erreichbar. Prüfen Sie app.config.js oder die Server-Konfiguration. (${diagnostic})`
+  );
+}
 
 houseZones.forEach((zone) => {
   zone.addEventListener("click", () => selectRoom(zone.dataset.roomZone));
