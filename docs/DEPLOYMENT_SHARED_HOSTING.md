@@ -2,6 +2,8 @@
 
 Die App benötigt einen Node.js-Prozess, um als Proxy zwischen Browser und MySQL-Datenbank zu fungieren. Reines Hochladen der statischen Dateien reicht nicht aus.
 
+> **Strato ohne Node.js?** Verwende stattdessen die PHP-Variante aus [`DEPLOYMENT_STRATO_SHARED_HOSTING.md`](DEPLOYMENT_STRATO_SHARED_HOSTING.md).
+
 1. **Node.js bereitstellen**
    * Prüfe, ob dein Hosting die Einrichtung von Node.js-Anwendungen zulässt (z. B. Plesk „Node.js-App“, cPanel Passenger oder SSH-Zugang).
    * Lege das Projektverzeichnis als Dokumentenstamm fest oder richte einen eigenen Ordner für die App ein.

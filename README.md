@@ -19,9 +19,10 @@
 
 ## Betrieb auf gemeinsamem Webspace
 
-Eine ausführliche Schritt-für-Schritt-Anleitung findest du in [`docs/DEPLOYMENT_SHARED_HOSTING.md`](docs/DEPLOYMENT_SHARED_HOSTING.md).
+- Für Setups **mit Node.js-Unterstützung** findest du weiterhin die Schritt-für-Schritt-Anleitung in [`docs/DEPLOYMENT_SHARED_HOSTING.md`](docs/DEPLOYMENT_SHARED_HOSTING.md).
+- Für Strato-Hosting **ohne Node.js** gibt es jetzt eine komplette PHP-Variante. Folge [`docs/DEPLOYMENT_STRATO_SHARED_HOSTING.md`](docs/DEPLOYMENT_STRATO_SHARED_HOSTING.md), um die API mit PHP zum Laufen zu bringen und die bestehende MySQL-Datenbank zu nutzen.
 
-Kurzfassung:
+Kurzfassung Node.js:
 
 1. Frontend-Dateien allein genügen nicht – der Node.js-Server muss laufen, weil er als Schnittstelle zur MySQL-Datenbank dient.
 2. Über das Hosting-Panel oder via SSH Node.js aktivieren und im Projektordner `npm install --production mysql2` ausführen.
@@ -29,8 +30,6 @@ Kurzfassung:
 4. `node server.js` (oder `npm start`) starten. Die API steht dann unter `/api/...` bereit und liefert auch die statischen Dateien aus.
 5. Bei getrenntem Frontend `app.config.example.js` kopieren → `app.config.js` und dort `window.APP_CONFIG = { apiBaseUrl: "https://dein-backend.example.com/api" };` setzen (_vor_ `app.js` einbinden).
 6. Mit `https://<deine-domain>/api/health` prüfen, ob die API erreichbar ist.
-
-> Hinweis: Hoster ohne Node-Unterstützung können die API nicht ausführen. In diesem Fall muss ein anderer Server (VPS, Docker, PaaS) die Node-Anwendung übernehmen.
 
 ## Login-Daten
 

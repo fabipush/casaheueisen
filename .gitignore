@@ -3,3 +3,4 @@ node_modules/
 npm-debug.log*
 data/todos.json
 app.config.js
+api/config.php
