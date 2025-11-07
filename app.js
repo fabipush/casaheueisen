@@ -1,0 +1,498 @@
+const USERS = {
+  bauen2024: { role: "Admin", permissions: "write" },
+  anschauen: { role: "Viewer", permissions: "read" },
+};
+
+const storageKey = "casaheueisen_todos";
+const HOUSE_ROOMS = [
+  "Bad",
+  "Schlafzimmer",
+  "Kinderzimmer",
+  "Wohnzimmer",
+  "Küche",
+  "Eingang & Treppen",
+  "Hauswirtschaftsraum",
+  "Technik",
+];
+const generateId = () =>
+  globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const defaultTodos = [
+  {
+    id: generateId(),
+    title: "Baustellenschild aktualisieren",
+    scope: "general",
+    notes: "Neue Telefonnummer für Bauleiter ergänzen",
+    completed: false,
+  },
+  {
+    id: generateId(),
+    title: "Elektroinstallation prüfen",
+    scope: "room",
+    room: "Küche",
+    notes: "Steckdosenplan mit Elektriker abstimmen",
+    completed: true,
+  },
+  {
+    id: generateId(),
+    title: "Estrich abnehmen",
+    scope: "room",
+    room: "Bad",
+    notes: "Feuchtigkeit messen und dokumentieren",
+    completed: false,
+  },
+];
+
+let currentUser = null;
+let todos = loadTodos();
+
+const loginSection = document.getElementById("login-section");
+const dashboard = document.getElementById("dashboard");
+const loginForm = document.getElementById("login-form");
+const passwordInput = document.getElementById("password");
+const userRole = document.getElementById("user-role");
+const logoutButton = document.getElementById("logout");
+const scopeSelect = document.getElementById("scope-select");
+const roomSelect = document.getElementById("room-select");
+const roomLabel = document.getElementById("room-label");
+const todoList = document.getElementById("todo-list");
+const todoForm = document.getElementById("todo-form");
+const viewerInfo = document.getElementById("viewer-info");
+const todoTitle = document.getElementById("todo-title");
+const todoScope = document.getElementById("todo-scope");
+const todoRoomGroup = document.getElementById("todo-room-group");
+const todoRoom = document.getElementById("todo-room");
+const todoNotes = document.getElementById("todo-notes");
+const completedCount = document.getElementById("completed-count");
+const totalCount = document.getElementById("total-count");
+const progressPercent = document.getElementById("progress-percent");
+const progressBarFill = document.getElementById("progress-bar-fill");
+const houseMap = document.getElementById("house-map");
+const houseZones = houseMap
+  ? Array.from(houseMap.querySelectorAll("[data-room-zone]"))
+  : [];
+
+function updateRoomFilterVisibility() {
+  if (scopeSelect.value === "room") {
+    roomLabel.classList.remove("hidden");
+    roomSelect.classList.remove("hidden");
+  } else {
+    roomLabel.classList.add("hidden");
+    roomSelect.classList.add("hidden");
+  }
+}
+
+function loadTodos() {
+  try {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error("Konnte To-Dos nicht laden", error);
+  }
+  return defaultTodos;
+}
+
+function saveTodos() {
+  localStorage.setItem(storageKey, JSON.stringify(todos));
+}
+
+function login(password) {
+  const user = USERS[password];
+  if (!user) {
+    return false;
+  }
+  currentUser = user;
+  sessionStorage.setItem("casaheueisen_user", JSON.stringify(user));
+  renderApp();
+  return true;
+}
+
+function logout() {
+  currentUser = null;
+  sessionStorage.removeItem("casaheueisen_user");
+  passwordInput.value = "";
+  todoForm.reset();
+  todoRoomGroup.classList.add("hidden");
+  todoRoom.required = false;
+  viewerInfo.classList.add("hidden");
+  dashboard.classList.add("hidden");
+  loginSection.classList.remove("hidden");
+}
+
+function restoreSession() {
+  try {
+    const stored = sessionStorage.getItem("casaheueisen_user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.role) {
+        currentUser = parsed;
+        renderApp();
+      }
+    }
+  } catch (error) {
+    console.error("Session konnte nicht wiederhergestellt werden", error);
+  }
+}
+
+function renderApp() {
+  if (!currentUser) {
+    return;
+  }
+  userRole.textContent = `${currentUser.role} · ${currentUser.permissions === "write" ? "Lese- & Schreibrechte" : "Nur Leserechte"}`;
+  loginSection.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+
+  if (currentUser.permissions === "write") {
+    todoForm.classList.remove("hidden");
+    viewerInfo.classList.add("hidden");
+  } else {
+    todoForm.classList.add("hidden");
+    viewerInfo.classList.remove("hidden");
+  }
+  updateRoomFilterVisibility();
+  renderTodos();
+  updateRoomOptions();
+  updateProgress();
+  updateHouseMap();
+}
+
+function createTodoItemElement(item) {
+  const li = document.createElement("li");
+  li.className = "todo";
+
+  const header = document.createElement("div");
+  header.className = "todo__header";
+
+  const title = document.createElement("h3");
+  title.textContent = item.title;
+
+  const meta = document.createElement("div");
+  meta.className = "todo__meta";
+
+  const badge = document.createElement("span");
+  badge.className = "badge" + (item.scope === "room" ? " badge--room" : "");
+  badge.textContent = item.scope === "room" ? "Raumbezug" : "Allgemein";
+  meta.appendChild(badge);
+
+  if (item.scope === "room" && item.room) {
+    const roomBadge = document.createElement("span");
+    roomBadge.className = "badge badge--room";
+    roomBadge.textContent = item.room;
+    meta.appendChild(roomBadge);
+  }
+
+  header.appendChild(title);
+  header.appendChild(meta);
+
+  const actions = document.createElement("div");
+  actions.className = "todo__actions";
+
+  const status = document.createElement("span");
+  status.textContent = item.completed ? "Erledigt" : "Offen";
+  status.className = "badge";
+  if (item.completed) {
+    status.style.background = "rgba(34, 197, 94, 0.2)";
+    status.style.color = "#15803d";
+  }
+  actions.appendChild(status);
+
+  if (currentUser && currentUser.permissions === "write") {
+    const toggleButton = document.createElement("button");
+    toggleButton.textContent = item.completed ? "Zurück auf offen" : "Als erledigt markieren";
+    toggleButton.dataset.action = "toggle";
+    toggleButton.addEventListener("click", () => toggleTodo(item.id));
+    actions.appendChild(toggleButton);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "Löschen";
+    deleteButton.dataset.action = "delete";
+    deleteButton.addEventListener("click", () => deleteTodo(item.id));
+    actions.appendChild(deleteButton);
+  }
+
+  const notes = document.createElement("p");
+  notes.className = "todo__notes";
+  notes.textContent = item.notes || "";
+
+  li.appendChild(header);
+  li.appendChild(actions);
+  li.appendChild(notes);
+
+  if (item.completed) {
+    li.style.opacity = 0.75;
+  }
+
+  return li;
+}
+
+function renderTodos() {
+  const filterScope = scopeSelect.value;
+  const selectedRoom = roomSelect.value;
+  todoList.innerHTML = "";
+
+  const filtered = todos.filter((item) => {
+    if (filterScope === "general") {
+      return item.scope === "general";
+    }
+    if (filterScope === "room") {
+      if (selectedRoom && selectedRoom !== "all") {
+        return item.scope === "room" && item.room === selectedRoom;
+      }
+      return item.scope === "room";
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    const empty = document.createElement("li");
+    empty.className = "todo";
+    empty.innerHTML = "<strong>Keine Aufgaben gefunden.</strong>";
+    todoList.appendChild(empty);
+    return;
+  }
+
+  filtered
+    .sort((a, b) => Number(a.completed) - Number(b.completed))
+    .forEach((item) => {
+      const element = createTodoItemElement(item);
+      todoList.appendChild(element);
+    });
+}
+
+function updateRoomOptions() {
+  const previousSelection = roomSelect.value;
+  const rooms = Array.from(
+    new Set([
+      ...HOUSE_ROOMS,
+      ...todos
+        .filter((t) => t.scope === "room" && t.room)
+        .map((t) => t.room),
+    ])
+  ).filter(Boolean);
+  roomSelect.innerHTML = "";
+
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = "Alle Räume";
+  roomSelect.appendChild(allOption);
+
+  rooms.forEach((room) => {
+    const option = document.createElement("option");
+    option.value = room;
+    option.textContent = room;
+    roomSelect.appendChild(option);
+  });
+
+  if (previousSelection && (previousSelection === "all" || rooms.includes(previousSelection))) {
+    roomSelect.value = previousSelection;
+  }
+}
+
+function updateProgress() {
+  const total = todos.length;
+  const completed = todos.filter((t) => t.completed).length;
+  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+  totalCount.textContent = total;
+  completedCount.textContent = completed;
+  progressPercent.textContent = `${percent}%`;
+  progressBarFill.style.width = `${percent}%`;
+}
+
+function toggleTodo(id) {
+  if (!currentUser || currentUser.permissions !== "write") {
+    return;
+  }
+  todos = todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo));
+  saveTodos();
+  renderTodos();
+  updateProgress();
+  updateHouseMap();
+}
+
+function deleteTodo(id) {
+  if (!currentUser || currentUser.permissions !== "write") {
+    return;
+  }
+  todos = todos.filter((todo) => todo.id !== id);
+  saveTodos();
+  renderTodos();
+  updateRoomOptions();
+  updateProgress();
+  updateHouseMap();
+}
+
+function addTodo({ title, scope, room, notes }) {
+  const todo = {
+    id: generateId(),
+    title,
+    scope,
+    room: scope === "room" ? room?.trim() || "Unbenannter Raum" : undefined,
+    notes,
+    completed: false,
+  };
+  todos = [todo, ...todos];
+  saveTodos();
+  todoForm.reset();
+  todoRoomGroup.classList.add("hidden");
+  todoRoom.required = false;
+  renderTodos();
+  updateRoomOptions();
+  updateProgress();
+  updateHouseMap();
+}
+
+function ensureRoomOption(roomName) {
+  if (!roomName || roomName === "all") {
+    return;
+  }
+  const existingOption = Array.from(roomSelect.options).find(
+    (option) => option.value === roomName
+  );
+  if (!existingOption) {
+    const option = document.createElement("option");
+    option.value = roomName;
+    option.textContent = roomName;
+    roomSelect.appendChild(option);
+  }
+}
+
+function selectRoom(roomName) {
+  scopeSelect.value = "room";
+  updateRoomFilterVisibility();
+  updateRoomOptions();
+  ensureRoomOption(roomName);
+  roomSelect.value = roomName;
+  renderTodos();
+  updateHouseMap();
+}
+
+function getRoomStats(roomName) {
+  const tasks = todos.filter((todo) => todo.scope === "room" && todo.room === roomName);
+  const open = tasks.filter((todo) => !todo.completed).length;
+  return { open, total: tasks.length };
+}
+
+function updateHouseMap() {
+  if (!houseZones.length) {
+    return;
+  }
+  const selectedScope = scopeSelect.value;
+  const selectedRoom = roomSelect.value;
+
+  houseZones.forEach((zone) => {
+    const roomName = zone.dataset.roomZone;
+    const counter = zone.querySelector(".house-map__count");
+    const displayLabel = zone.dataset.roomLabel || roomName;
+    const { open, total } = getRoomStats(roomName);
+    if (counter) {
+      counter.textContent = total ? `${open}/${total}` : "0";
+      counter.dataset.open = open;
+      counter.dataset.total = total;
+    }
+
+    const label = zone.querySelector(".house-map__label");
+    if (label) {
+      label.textContent = displayLabel;
+    }
+
+    zone.classList.toggle(
+      "is-selected",
+      selectedScope === "room" && selectedRoom === roomName
+    );
+    zone.classList.toggle("is-empty", total === 0);
+    zone.setAttribute(
+      "aria-pressed",
+      selectedScope === "room" && selectedRoom === roomName ? "true" : "false"
+    );
+
+    zone.setAttribute(
+      "aria-label",
+      total
+        ? `${roomName}: ${open} von ${total} Aufgaben offen`
+        : `${roomName}: keine Aufgaben`
+    );
+  });
+}
+
+loginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const password = passwordInput.value.trim();
+  if (!login(password)) {
+    loginForm.classList.add("shake");
+    passwordInput.setCustomValidity("Ungültiges Passwort");
+    passwordInput.reportValidity();
+    setTimeout(() => passwordInput.setCustomValidity(""), 400);
+    setTimeout(() => loginForm.classList.remove("shake"), 500);
+    passwordInput.focus();
+    return;
+  }
+});
+
+logoutButton.addEventListener("click", logout);
+
+scopeSelect.addEventListener("change", () => {
+  updateRoomFilterVisibility();
+  renderTodos();
+  updateHouseMap();
+});
+
+roomSelect.addEventListener("change", () => {
+  renderTodos();
+  updateHouseMap();
+});
+
+todoScope.addEventListener("change", () => {
+  if (todoScope.value === "room") {
+    todoRoomGroup.classList.remove("hidden");
+    todoRoom.required = true;
+  } else {
+    todoRoomGroup.classList.add("hidden");
+    todoRoom.required = false;
+    todoRoom.value = "";
+  }
+});
+
+todoForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentUser || currentUser.permissions !== "write") {
+    return;
+  }
+
+  const data = {
+    title: todoTitle.value.trim(),
+    scope: todoScope.value,
+    room: todoRoom.value,
+    notes: todoNotes.value.trim(),
+  };
+
+  if (!data.title) {
+    todoTitle.focus();
+    return;
+  }
+
+  if (data.scope === "room" && !data.room.trim()) {
+    todoRoom.focus();
+    return;
+  }
+
+  addTodo(data);
+});
+
+houseZones.forEach((zone) => {
+  zone.addEventListener("click", () => selectRoom(zone.dataset.roomZone));
+});
+
+restoreSession();
+updateRoomFilterVisibility();
+renderTodos();
+updateRoomOptions();
+updateProgress();
+updateHouseMap();

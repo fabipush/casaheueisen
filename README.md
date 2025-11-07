@@ -17,18 +17,14 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-> **Hinweis zu `composer.lock`**: Sollte auf dem Server bereits eine alte `composer.lock` liegen, löschen Sie diese vor der
-> Installation (`rm composer.lock`). Ohne Sperrdatei führt `composer install` automatisch eine Aktualisierung aus und zieht die
-> in `composer.json` definierten Pakete – einschließlich `fruitcake/laravel-cors:^4.0`.
-
 Passen Sie anschließend die `.env`-Datei an Ihre Umgebung an. Die hinterlegten Default-Werte zeigen auf die aktuelle Datenbank:
 
 ```
-DB_HOST=1506826.cloudwaysapps.com
+DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=axhzsptkag
-DB_USERNAME=axhzsptkag
-DB_PASSWORD=6ZzDCyWTBc
+DB_DATABASE=baduyrxbnk
+DB_USERNAME=baduyrxbnk
+DB_PASSWORD=3SME7kReSa
 ```
 
 Führen Sie danach die Migrationen und Seed-Daten aus:
@@ -42,11 +38,11 @@ php artisan migrate --seed
 1. Öffnen Sie die Datei `.env` im Projektstamm.
 2. Tragen Sie Host, Port, Datenbankname, Benutzer und Passwort Ihrer MySQL-Instanz ein. Für den aktuellen Stand:
    ```
-   DB_HOST=1506826.cloudwaysapps.com
+   DB_HOST=127.0.0.1
    DB_PORT=3306
-   DB_DATABASE=axhzsptkag
-   DB_USERNAME=axhzsptkag
-   DB_PASSWORD=6ZzDCyWTBc
+   DB_DATABASE=baduyrxbnk
+   DB_USERNAME=baduyrxbnk
+   DB_PASSWORD=3SME7kReSa
    ```
 3. Speichern Sie die Datei und stellen Sie sicher, dass der MySQL-Server Verbindungen vom Webserver akzeptiert.
 4. Führen Sie die Migrationen aus, damit Laravel die Tabelle `todos` anlegt:
@@ -71,12 +67,11 @@ Die Anwendung ist anschließend unter <http://localhost:8000> erreichbar. Das Fr
 
 1. Laden Sie den gesamten Projektordner (ohne `vendor`) auf den Webspace hoch.
 2. Installieren Sie die Composer-Abhängigkeiten direkt auf dem Server (z. B. via SSH):
-```bash
-rm -f composer.lock
-composer install --no-dev --optimize-autoloader
-```
+   ```bash
+   composer install --no-dev --optimize-autoloader
+   ```
 3. Setzen Sie die Dateiberechtigungen für `storage/` und `bootstrap/cache/` auf schreibbar.
-4. Hinterlegen Sie eine produktive `.env`-Datei mit den korrekten Zugangsdaten Ihrer neuen MySQL-Instanz (`axhzsptkag`).
+4. Hinterlegen Sie eine produktive `.env`-Datei mit den korrekten Zugangsdaten Ihrer neuen MySQL-Instanz (`baduyrxbnk`).
 5. Führen Sie Migrationen und optionale Seeds aus:
    ```bash
    php artisan migrate --force
@@ -84,29 +79,6 @@ composer install --no-dev --optimize-autoloader
    ```
 6. Konfigurieren Sie den Document-Root Ihres Hostings so, dass er auf den Ordner `public/` zeigt.
 7. Aktivieren Sie falls nötig mod_rewrite bzw. die Laravel `.htaccess`-Regeln im Hosting.
-
-## Fehlerbehebung
-
-### "Class 'Fruitcake\\Cors\\CorsServiceProvider' not found"
-
-Dieser Fehler erscheint, wenn die Composer-Abhängigkeiten auf dem Server nicht installiert wurden oder wenn das Paket `fruitcake/laravel-cors` während des Deployments ausgelassen wurde. Führen Sie die folgenden Schritte direkt auf dem Server aus:
-
-```bash
-cd /pfad/zur/app
-rm -f composer.lock
-composer install --no-dev --optimize-autoloader
-php artisan config:clear
-```
-
-Falls Ihr Hosting Composer zwingend mit vorhandener Lock-Datei ausführt, aktualisieren Sie sie einmalig:
-
-```bash
-composer update fruitcake/laravel-cors --with-all-dependencies --no-dev --optimize-autoloader
-```
-
-Danach können Sie `composer install` wieder verwenden.
-
-Stellen Sie sicher, dass Composer dabei die aktuelle Version `fruitcake/laravel-cors:^4.0` installiert – diese Version ist mit Laravel 10 und PHP 8 kompatibel. Die Anwendung registriert den CORS-Service-Provider nur, wenn das Paket vorhanden ist. Nach einer erfolgreichen Installation verschwindet der Fehler. Sollte Ihr Hosting-Anbieter die Funktion `highlight_file` deaktiviert haben und Sie weiterhin eine Debug-Seite sehen, setzt der Code die Ausgabe automatisch auf den produktiven Fehlerbildschirm zurück. Sie können zusätzlich `APP_DEBUG=false` in Ihrer `.env` konfigurieren, um dauerhaft die kompakte Fehlermeldung zu verwenden.
 
 ## API-Überblick
 
