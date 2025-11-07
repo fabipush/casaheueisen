@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8f4ee" />
+      <stop offset="1" stop-color="#f1e7dc" />
+    </linearGradient>
+    <style>
+      .outline { fill: none; stroke: #b79d7d; stroke-width: 10; stroke-linejoin: round; }
+      .room { fill: #fdfaf5; stroke: #c4a688; stroke-width: 6; }
+      .detail { stroke: #c4a688; stroke-width: 6; fill: none; stroke-linecap: round; }
+      .accent { fill: #d8b892; }
+    </style>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)" rx="40" />
+  <path class="outline" d="M120 320 L400 80 L680 320 V700 H120 Z" fill="#fdf6ee" />
+  <g id="interior">
+    <rect class="room" x="160" y="340" width="480" height="120" />
+    <rect class="room" x="160" y="480" width="220" height="140" />
+    <rect class="room" x="420" y="480" width="220" height="140" />
+    <rect class="room" x="160" y="640" width="220" height="120" />
+    <rect class="room" x="420" y="640" width="220" height="120" />
+    <rect class="room" x="160" y="200" width="220" height="120" />
+    <rect class="room" x="420" y="200" width="220" height="120" />
+    <line class="detail" x1="160" y1="460" x2="640" y2="460" />
+    <line class="detail" x1="160" y1="620" x2="640" y2="620" />
+    <line class="detail" x1="380" y1="200" x2="380" y2="760" />
+  </g>
+  <g id="details">
+    <rect class="accent" x="450" y="510" width="80" height="40" rx="10" />
+    <rect class="accent" x="200" y="510" width="80" height="40" rx="10" />
+    <circle class="accent" cx="530" cy="700" r="36" />
+    <rect class="accent" x="220" y="700" width="80" height="50" rx="12" />
+    <rect class="accent" x="240" y="230" width="80" height="40" rx="10" />
+    <rect class="accent" x="500" y="230" width="80" height="40" rx="10" />
+    <path class="detail" d="M460 530 h60" />
+    <path class="detail" d="M210 530 h60" />
+    <path class="detail" d="M240 730 h80" />
+    <path class="detail" d="M510 730 h40" />
+  </g>
+  <path class="detail" d="M640 320 V160 h-40" />
+  <rect class="accent" x="585" y="120" width="50" height="60" />
+</svg>
