@@ -10,7 +10,7 @@ return [
     'fallback_locale' => 'en',
     'key' => env('APP_KEY'),
     'cipher' => 'AES-256-CBC',
-    'providers' => array_values(array_filter([
+    'providers' => [
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
         Illuminate\Bus\BusServiceProvider::class,
@@ -33,13 +33,11 @@ return [
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
-        class_exists('Fruitcake\\Cors\\CorsServiceProvider')
-            ? 'Fruitcake\\Cors\\CorsServiceProvider'
-            : null,
+        Fruitcake\Cors\CorsServiceProvider::class,
         App\Providers\AppServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-    ])),
+    ],
     'aliases' => [
         'App' => Illuminate\Support\Facades\App::class,
         'Route' => Illuminate\Support\Facades\Route::class,
